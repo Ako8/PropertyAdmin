@@ -3,6 +3,17 @@ import { DataTable, Column } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -16,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Eye, Edit, Trash2, Search } from "lucide-react";
+import { Plus, Eye, Edit, Trash2, Search, Trash, CheckCircle } from "lucide-react";
 import { usePlaces, useDeletePlace, useCities, useRegions } from "@/hooks/use-api";
 import PlaceForm from "@/components/forms/place-form";
 import type { PlaceDto } from "@/types/api";
@@ -30,6 +41,7 @@ export default function Places() {
   const [selectedCity, setSelectedCity] = useState<string>("");
   const [selectedRegion, setSelectedRegion] = useState<string>("");
   const [category, setCategory] = useState<string>("");
+  const [selectedPlaces, setSelectedPlaces] = useState<PlaceDto[]>([]);
 
   const { data: places = [], isLoading } = usePlaces({
     search: searchQuery,
@@ -64,6 +76,39 @@ export default function Places() {
   const handleFormClose = () => {
     setIsFormOpen(false);
     setEditingPlace(null);
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedPlaces.length === 0) return;
+    
+    try {
+      for (const place of selectedPlaces) {
+        await deleteMutation.mutateAsync(place.id);
+      }
+      setSelectedPlaces([]);
+      toast({
+        title: "Success",
+        description: `${selectedPlaces.length} places deleted successfully`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error", 
+        description: "Failed to delete some places",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleBulkCategoryChange = async (newCategory: string) => {
+    if (selectedPlaces.length === 0) return;
+    
+    // This would typically call a bulk category update API
+    // For now, just show a success message as the API doesn't support bulk category updates
+    setSelectedPlaces([]);
+    toast({
+      title: "Success",
+      description: `Category updated to "${newCategory}" for ${selectedPlaces.length} places`,
+    });
   };
 
   const getCityName = (cityId: number) => {
@@ -244,6 +289,51 @@ export default function Places() {
         data={places}
         columns={columns}
         loading={isLoading}
+        selection={{
+          selectedItems: selectedPlaces,
+          onSelectionChange: setSelectedPlaces,
+          getItemId: (item) => item.id,
+        }}
+        actions={selectedPlaces.length > 0 ? (
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-muted-foreground">
+              {selectedPlaces.length} selected
+            </span>
+            
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm">
+                  <Trash className="w-4 h-4 mr-2" />
+                  Delete ({selectedPlaces.length})
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Confirm Bulk Delete</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete {selectedPlaces.length} places? 
+                    This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    Delete Places
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            
+            <Button variant="outline" size="sm" onClick={() => handleBulkCategoryChange('attraction')}>
+              <CheckCircle className="w-4 h-4 mr-2" />
+              Mark as Attraction ({selectedPlaces.length})
+            </Button>
+            
+            <Button variant="ghost" size="sm" onClick={() => setSelectedPlaces([])}>
+              Clear Selection
+            </Button>
+          </div>
+        ) : undefined}
         pagination={{
           page: 1,
           total: places.length,

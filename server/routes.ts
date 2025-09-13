@@ -1,5 +1,6 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
+import multer from "multer";
 import { storage } from "./storage";
 import { propertyCreateSchema, cityCreateSchema, regionCreateSchema, placeCreateSchema, blogCreateSchema, typeCreateSchema } from "@shared/schema";
 import type { 
@@ -12,6 +13,22 @@ import type {
 } from "@shared/schema";
 
 const API_BASE_URL = process.env.API_BASE_URL || "https://api.resorter360.ge";
+
+// Configure multer for file uploads (memory storage for proxy)
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Only allow image files
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'));
+    }
+  }
+});
 
 // Helper function to make API requests
 async function apiRequest(endpoint: string, options: RequestInit = {}) {
@@ -455,26 +472,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Multer error handler middleware for upload endpoint
+  const handleMulterErrors = (err: any, req: Request, res: Response, next: NextFunction) => {
+    if (err instanceof multer.MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({ error: 'File too large. Maximum size is 10MB.' });
+      }
+      return res.status(400).json({ error: err.message });
+    }
+    if (err?.message === 'Only image files are allowed') {
+      return res.status(400).json({ error: 'Only image files are allowed. Please upload a valid image.' });
+    }
+    next(err);
+  };
+
   // File upload endpoint (proxy to external API)
-  app.post("/api/storage/upload", async (req, res) => {
+  app.post("/api/storage/upload", upload.single('File'), handleMulterErrors, async (req, res) => {
     try {
-      // Forward the file upload request to the external API
+      if (!req.file) {
+        return res.status(400).json({ error: "No file provided" });
+      }
+
+      // Create FormData to forward to external API
       const formData = new FormData();
       
-      // Note: In a real implementation, you'd need to handle multipart/form-data
-      // This is a simplified version - proper multer integration would be needed
+      // Add the file as a Blob
+      const fileBlob = new Blob([req.file.buffer], { type: req.file.mimetype });
+      formData.append('File', fileBlob, req.file.originalname);
+      
+      // Validate and add other form fields
+      const tableName = req.body.TableName;
+      const refId = req.body.RefId;
+      const isThumbnail = req.body.IsThumbnail;
+      
+      // Validate TableName
+      const validTableNames = ['Property', 'City', 'Region', 'Place', 'Blog'];
+      if (tableName && !validTableNames.includes(tableName)) {
+        return res.status(400).json({ error: 'Invalid entity type. Must be one of: ' + validTableNames.join(', ') });
+      }
+      
+      // Validate RefId as integer
+      if (refId && (isNaN(parseInt(refId)) || parseInt(refId) <= 0)) {
+        return res.status(400).json({ error: 'Reference ID must be a positive integer.' });
+      }
+      
+      // Add validated form fields
+      if (tableName) formData.append('TableName', tableName);
+      if (refId) formData.append('RefId', refId);
+      if (isThumbnail !== undefined) formData.append('IsThumbnail', isThumbnail.toString());
+
+      // Forward to external API
       const response = await fetch(`${API_BASE_URL}/api/Storage/upload`, {
         method: "POST",
-        body: req.body, // This would need proper form data handling
+        body: formData,
       });
 
       if (!response.ok) {
-        throw new Error(`Upload failed: ${response.statusText}`);
+        const errorText = await response.text();
+        throw new Error(`Upload failed: ${response.status} ${errorText}`);
       }
 
-      const data = await response.json();
-      res.json(data);
+      let data;
+      try {
+        data = await response.json();
+      } catch (error) {
+        throw new Error('Invalid response from upload service');
+      }
+
+      // Ensure response matches expected format
+      const uploadResponse = {
+        url: data.url || data.link || '',
+        fileName: data.fileName || data.name || req.file?.originalname || 'unknown',
+        id: data.id,
+        ...data // Include any additional fields
+      };
+      
+      res.json(uploadResponse);
     } catch (error) {
+      console.error('Upload error:', error);
       res.status(500).json({ error: error instanceof Error ? error.message : "Failed to upload file" });
     }
   });

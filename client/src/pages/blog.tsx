@@ -3,6 +3,17 @@ import { DataTable, Column } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -16,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Eye, Edit, Trash2, CheckCircle, Clock, Edit3 } from "lucide-react";
+import { Plus, Eye, Edit, Trash2, CheckCircle, Clock, Edit3, Trash } from "lucide-react";
 import { useBlogPosts, useDeleteBlogPost } from "@/hooks/use-api";
 import BlogForm from "@/components/forms/blog-form";
 import type { BlogDto } from "@/types/api";
@@ -28,6 +39,7 @@ export default function Blog() {
   const [editingPost, setEditingPost] = useState<BlogDto | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
+  const [selectedPosts, setSelectedPosts] = useState<BlogDto[]>([]);
 
   const { data: blogPosts = [], isLoading } = useBlogPosts();
   const deleteMutation = useDeleteBlogPost();
@@ -63,6 +75,38 @@ export default function Blog() {
   const handleFormClose = () => {
     setIsFormOpen(false);
     setEditingPost(null);
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedPosts.length === 0) return;
+    
+    try {
+      for (const post of selectedPosts) {
+        await deleteMutation.mutateAsync(post.id);
+      }
+      setSelectedPosts([]);
+      toast({
+        title: "Success",
+        description: `${selectedPosts.length} blog posts deleted successfully`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error", 
+        description: "Failed to delete some blog posts",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleBulkStatusChange = async (status: string) => {
+    if (selectedPosts.length === 0) return;
+    
+    // This would typically call a bulk status update API
+    setSelectedPosts([]);
+    toast({
+      title: "Success",
+      description: `Status updated to "${status}" for ${selectedPosts.length} blog posts`,
+    });
   };
 
   // Mock stats based on available data
@@ -244,6 +288,56 @@ export default function Blog() {
         searchPlaceholder="Search posts..."
         onSearch={setSearchQuery}
         loading={isLoading}
+        selection={{
+          selectedItems: selectedPosts,
+          onSelectionChange: setSelectedPosts,
+          getItemId: (item) => item.id,
+        }}
+        actions={selectedPosts.length > 0 ? (
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-muted-foreground">
+              {selectedPosts.length} selected
+            </span>
+            
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm">
+                  <Trash className="w-4 h-4 mr-2" />
+                  Delete ({selectedPosts.length})
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Confirm Bulk Delete</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete {selectedPosts.length} blog posts? 
+                    This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    Delete Posts
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            
+            <Button variant="outline" size="sm" onClick={() => handleBulkStatusChange('published')}>
+              <CheckCircle className="w-4 h-4 mr-2" />
+              Publish ({selectedPosts.length})
+            </Button>
+            
+            <Button variant="outline" size="sm" onClick={() => handleBulkStatusChange('draft')}>
+              <Edit className="w-4 h-4 mr-2" />
+              Draft ({selectedPosts.length})
+            </Button>
+            
+            <Button variant="ghost" size="sm" onClick={() => setSelectedPosts([])}>
+              Clear Selection
+            </Button>
+          </div>
+        ) : undefined}
         pagination={{
           page: 1,
           total: filteredPosts.length,

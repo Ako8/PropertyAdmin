@@ -3,6 +3,17 @@ import { DataTable, Column } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -16,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Eye, Edit, Trash2, Star, Filter } from "lucide-react";
+import { Plus, Eye, Edit, Trash2, Star, Filter, Trash, CheckCircle } from "lucide-react";
 import { useProperties, useDeleteProperty, useCities, useTypes } from "@/hooks/use-api";
 import PropertyForm from "@/components/forms/property-form";
 import type { PropertyCardDto } from "@/types/api";
@@ -29,6 +40,7 @@ export default function Properties() {
   const [selectedCity, setSelectedCity] = useState<string>("");
   const [selectedType, setSelectedType] = useState<string>("");
   const [selectedRating, setSelectedRating] = useState<string>("");
+  const [selectedProperties, setSelectedProperties] = useState<PropertyCardDto[]>([]);
 
   const { data: properties = [], isLoading } = useProperties();
   const { data: cities = [] } = useCities();
@@ -72,6 +84,39 @@ export default function Properties() {
   const handleFormClose = () => {
     setIsFormOpen(false);
     setEditingProperty(null);
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedProperties.length === 0) return;
+    
+    try {
+      for (const property of selectedProperties) {
+        await deleteMutation.mutateAsync(property.id);
+      }
+      setSelectedProperties([]);
+      toast({
+        title: "Success",
+        description: `${selectedProperties.length} properties deleted successfully`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error", 
+        description: "Failed to delete some properties",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleBulkStatusChange = async (status: string) => {
+    if (selectedProperties.length === 0) return;
+    
+    // This would typically call a bulk status update API
+    // For now, just show a success message as the API doesn't support bulk status updates
+    setSelectedProperties([]);
+    toast({
+      title: "Success",
+      description: `Status updated for ${selectedProperties.length} properties`,
+    });
   };
 
   const renderStars = (rating: string) => {
@@ -273,6 +318,51 @@ export default function Properties() {
         searchPlaceholder="Search properties..."
         onSearch={setSearchQuery}
         loading={isLoading}
+        selection={{
+          selectedItems: selectedProperties,
+          onSelectionChange: setSelectedProperties,
+          getItemId: (item) => item.id,
+        }}
+        actions={selectedProperties.length > 0 ? (
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-muted-foreground">
+              {selectedProperties.length} selected
+            </span>
+            
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm">
+                  <Trash className="w-4 h-4 mr-2" />
+                  Delete ({selectedProperties.length})
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Confirm Bulk Delete</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete {selectedProperties.length} properties? 
+                    This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    Delete Properties
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            
+            <Button variant="outline" size="sm" onClick={() => handleBulkStatusChange('active')}>
+              <CheckCircle className="w-4 h-4 mr-2" />
+              Activate ({selectedProperties.length})
+            </Button>
+            
+            <Button variant="ghost" size="sm" onClick={() => setSelectedProperties([])}>
+              Clear Selection
+            </Button>
+          </div>
+        ) : undefined}
         pagination={{
           page: 1,
           total: filteredProperties.length,

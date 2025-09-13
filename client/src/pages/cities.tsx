@@ -3,6 +3,17 @@ import { DataTable, Column } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -16,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Eye, Edit, Trash2 } from "lucide-react";
+import { Plus, Eye, Edit, Trash2, Trash, CheckCircle } from "lucide-react";
 import { useCities, useDeleteCity, useRegions } from "@/hooks/use-api";
 import CityForm from "@/components/forms/city-form";
 import type { CityDto } from "@/types/api";
@@ -27,6 +38,7 @@ export default function Cities() {
   const [editingCity, setEditingCity] = useState<CityDto | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRegion, setSelectedRegion] = useState<string>("");
+  const [selectedCities, setSelectedCities] = useState<CityDto[]>([]);
 
   const { data: cities = [], isLoading } = useCities();
   const { data: regions = [] } = useRegions();
@@ -62,6 +74,27 @@ export default function Cities() {
   const handleFormClose = () => {
     setIsFormOpen(false);
     setEditingCity(null);
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedCities.length === 0) return;
+    
+    try {
+      for (const city of selectedCities) {
+        await deleteMutation.mutateAsync(city.id);
+      }
+      setSelectedCities([]);
+      toast({
+        title: "Success",
+        description: `${selectedCities.length} cities deleted successfully`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error", 
+        description: "Failed to delete some cities",
+        variant: "destructive",
+      });
+    }
   };
 
   const getRegionName = (regionId: number) => {
@@ -194,6 +227,46 @@ export default function Cities() {
         searchPlaceholder="Search cities..."
         onSearch={setSearchQuery}
         loading={isLoading}
+        selection={{
+          selectedItems: selectedCities,
+          onSelectionChange: setSelectedCities,
+          getItemId: (item) => item.id,
+        }}
+        actions={selectedCities.length > 0 ? (
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-muted-foreground">
+              {selectedCities.length} selected
+            </span>
+            
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm">
+                  <Trash className="w-4 h-4 mr-2" />
+                  Delete ({selectedCities.length})
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Confirm Bulk Delete</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete {selectedCities.length} cities? 
+                    This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    Delete Cities
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            
+            <Button variant="ghost" size="sm" onClick={() => setSelectedCities([])}>
+              Clear Selection
+            </Button>
+          </div>
+        ) : undefined}
         pagination={{
           page: 1,
           total: filteredCities.length,
