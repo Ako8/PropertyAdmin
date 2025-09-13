@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useUploadFile } from "@/hooks/use-api";
+import { useUploadFile, useProperties, useCities, useRegions, usePlaces, useBlogPosts } from "@/hooks/use-api";
 import { Upload, X, FileImage, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -37,10 +37,38 @@ export function FileUpload({
   const [files, setFiles] = useState<File[]>([]);
   const [tableName, setTableName] = useState<string>("");
   const [refId, setRefId] = useState<string>("");
+  const [selectedEntityId, setSelectedEntityId] = useState<string>("");
   const [isThumbnail, setIsThumbnail] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const uploadMutation = useUploadFile();
+
+  // Fetch entities based on selected table type
+  const { data: properties = [] } = useProperties();
+  const { data: cities = [] } = useCities();
+  const { data: regions = [] } = useRegions();
+  const { data: places = [] } = usePlaces();
+  const { data: blogPosts = [] } = useBlogPosts();
+
+  // Get entities based on selected table type
+  const getEntitiesForTableType = () => {
+    switch (tableName) {
+      case "Property":
+        return properties.map(p => ({ id: p.id, name: p.name }));
+      case "City":
+        return cities.map(c => ({ id: c.id, name: c.name }));
+      case "Region":
+        return regions.map(r => ({ id: r.id, name: r.name }));
+      case "Place":
+        return places.map(p => ({ id: p.id, name: p.name }));
+      case "Blog":
+        return blogPosts.map(b => ({ id: b.id, name: b.title }));
+      default:
+        return [];
+    }
+  };
+
+  const availableEntities = getEntitiesForTableType();
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -114,6 +142,7 @@ export function FileUpload({
     setFiles([]);
     setTableName("");
     setRefId("");
+    setSelectedEntityId("");
     setIsThumbnail(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -127,7 +156,11 @@ export function FileUpload({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <Label htmlFor="tableName">Entity Type</Label>
-            <Select value={tableName} onValueChange={setTableName}>
+            <Select value={tableName} onValueChange={(value) => {
+              setTableName(value);
+              setSelectedEntityId(""); // Reset entity selection when table type changes
+              setRefId("");
+            }}>
               <SelectTrigger>
                 <SelectValue placeholder="Select entity type" />
               </SelectTrigger>
@@ -142,14 +175,28 @@ export function FileUpload({
           </div>
 
           <div>
-            <Label htmlFor="refId">Reference ID</Label>
-            <Input
-              id="refId"
-              type="number"
-              placeholder="Entity ID"
-              value={refId}
-              onChange={(e) => setRefId(e.target.value)}
-            />
+            <Label htmlFor="entitySelect">Select {tableName || "Entity"}</Label>
+            <Select
+              value={selectedEntityId}
+              onValueChange={(value) => {
+                setSelectedEntityId(value);
+                setRefId(value);
+              }}
+              disabled={!tableName}
+            >
+              <SelectTrigger>
+                <SelectValue 
+                  placeholder={tableName ? `Select ${tableName.toLowerCase()}` : "First select entity type"} 
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {availableEntities.map((entity) => (
+                  <SelectItem key={entity.id} value={entity.id.toString()}>
+                    {entity.name} (ID: {entity.id})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="flex items-end">
