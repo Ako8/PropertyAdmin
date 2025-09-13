@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useUploadFile, useProperties, useCities, useRegions, usePlaces, useBlogPosts } from "@/hooks/use-api";
+import { useUploadFile, useProperties, useCities, useRegions, usePlaces, useBlogPosts, useTypes } from "@/hooks/use-api";
 import { Upload, X, FileImage, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -49,6 +49,7 @@ export function FileUpload({
   const { data: regions = [] } = useRegions();
   const { data: places = [] } = usePlaces();
   const { data: blogPosts = [] } = useBlogPosts();
+  const { data: types = [] } = useTypes();
 
   // Get entities based on selected table type
   const getEntitiesForTableType = () => {
@@ -63,6 +64,8 @@ export function FileUpload({
         return places.map(p => ({ id: p.id, name: p.name }));
       case "Blog":
         return blogPosts.map(b => ({ id: b.id, name: b.title }));
+      case "Type":
+        return types.map(t => ({ id: t.id, name: t.name }));
       default:
         return [];
     }
@@ -170,6 +173,7 @@ export function FileUpload({
                 <SelectItem value="Region">Region</SelectItem>
                 <SelectItem value="Place">Place</SelectItem>
                 <SelectItem value="Blog">Blog</SelectItem>
+                <SelectItem value="Type">Type</SelectItem>
               </SelectContent>
             </Select>
           </div>

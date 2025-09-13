@@ -506,7 +506,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const isThumbnail = req.body.IsThumbnail;
       
       // Validate TableName
-      const validTableNames = ['Property', 'City', 'Region', 'Place', 'Blog'];
+      const validTableNames = ['Property', 'City', 'Region', 'Place', 'Blog', 'Type'];
       if (tableName && !validTableNames.includes(tableName)) {
         return res.status(400).json({ error: 'Invalid entity type. Must be one of: ' + validTableNames.join(', ') });
       }
