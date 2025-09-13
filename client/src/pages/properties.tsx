@@ -90,18 +90,33 @@ export default function Properties() {
     if (selectedProperties.length === 0) return;
     
     try {
-      for (const property of selectedProperties) {
-        await deleteMutation.mutateAsync(property.id);
-      }
+      // Use Promise.allSettled for concurrent execution
+      const deletePromises = selectedProperties.map(property => 
+        deleteMutation.mutateAsync(property.id)
+      );
+      const results = await Promise.allSettled(deletePromises);
+      
+      const successful = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
+      
       setSelectedProperties([]);
-      toast({
-        title: "Success",
-        description: `${selectedProperties.length} properties deleted successfully`,
-      });
+      
+      if (failed === 0) {
+        toast({
+          title: "Success",
+          description: `${successful} properties deleted successfully`,
+        });
+      } else {
+        toast({
+          title: "Partial Success",
+          description: `${successful} properties deleted, ${failed} failed`,
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       toast({
         title: "Error", 
-        description: "Failed to delete some properties",
+        description: "Failed to delete properties",
         variant: "destructive",
       });
     }

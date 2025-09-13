@@ -9,7 +9,18 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Eye, Edit, Trash2, ChevronDown, Map, MapPin } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Plus, Eye, Edit, Trash2, ChevronDown, Map, MapPin, Trash } from "lucide-react";
 import { useRegions, useDeleteRegion, useCities } from "@/hooks/use-api";
 import RegionForm from "@/components/forms/region-form";
 import type { RegionDto } from "@/types/api";
@@ -22,6 +33,7 @@ export default function Regions() {
   const [editingRegion, setEditingRegion] = useState<RegionDto | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedRegions, setExpandedRegions] = useState<Set<number>>(new Set());
+  const [selectedRegions, setSelectedRegions] = useState<RegionDto[]>([]);
 
   const { data: regions = [], isLoading } = useRegions();
   const { data: cities = [] } = useCities();
@@ -55,6 +67,42 @@ export default function Regions() {
   const handleFormClose = () => {
     setIsFormOpen(false);
     setEditingRegion(null);
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedRegions.length === 0) return;
+    
+    try {
+      // Use Promise.allSettled for concurrent execution
+      const deletePromises = selectedRegions.map(region => 
+        deleteMutation.mutateAsync(region.id)
+      );
+      const results = await Promise.allSettled(deletePromises);
+      
+      const successful = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
+      
+      setSelectedRegions([]);
+      
+      if (failed === 0) {
+        toast({
+          title: "Success",
+          description: `${successful} regions deleted successfully`,
+        });
+      } else {
+        toast({
+          title: "Partial Success",
+          description: `${successful} regions deleted, ${failed} failed`,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error", 
+        description: "Failed to delete regions",
+        variant: "destructive",
+      });
+    }
   };
 
   const getCitiesInRegion = (regionId: number) => {
@@ -97,9 +145,9 @@ export default function Regions() {
       header: "Languages",
       render: (region) => (
         <div className="flex space-x-1">
-          {region.language.en && <span className="text-xs">🇺🇸</span>}
-          {region.language.ka && <span className="text-xs">🇬🇪</span>}
-          {region.language.ru && <span className="text-xs">🇷🇺</span>}
+          {region.language?.en && <span className="text-xs">🇺🇸</span>}
+          {region.language?.ka && <span className="text-xs">🇬🇪</span>}
+          {region.language?.ru && <span className="text-xs">🇷🇺</span>}
         </div>
       ),
     },
@@ -263,6 +311,46 @@ export default function Regions() {
         searchPlaceholder="Search regions..."
         onSearch={setSearchQuery}
         loading={isLoading}
+        selection={{
+          selectedItems: selectedRegions,
+          onSelectionChange: setSelectedRegions,
+          getItemId: (item) => item.id,
+        }}
+        actions={selectedRegions.length > 0 ? (
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-muted-foreground">
+              {selectedRegions.length} selected
+            </span>
+            
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm">
+                  <Trash className="w-4 h-4 mr-2" />
+                  Delete ({selectedRegions.length})
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Confirm Bulk Delete</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete {selectedRegions.length} regions? 
+                    This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    Delete Regions
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            
+            <Button variant="ghost" size="sm" onClick={() => setSelectedRegions([])}>
+              Clear Selection
+            </Button>
+          </div>
+        ) : undefined}
         pagination={{
           page: 1,
           total: filteredRegions.length,

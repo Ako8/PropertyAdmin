@@ -81,18 +81,33 @@ export default function Blog() {
     if (selectedPosts.length === 0) return;
     
     try {
-      for (const post of selectedPosts) {
-        await deleteMutation.mutateAsync(post.id);
-      }
+      // Use Promise.allSettled for concurrent execution
+      const deletePromises = selectedPosts.map(post => 
+        deleteMutation.mutateAsync(post.id)
+      );
+      const results = await Promise.allSettled(deletePromises);
+      
+      const successful = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
+      
       setSelectedPosts([]);
-      toast({
-        title: "Success",
-        description: `${selectedPosts.length} blog posts deleted successfully`,
-      });
+      
+      if (failed === 0) {
+        toast({
+          title: "Success",
+          description: `${successful} blog posts deleted successfully`,
+        });
+      } else {
+        toast({
+          title: "Partial Success",
+          description: `${successful} blog posts deleted, ${failed} failed`,
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       toast({
         title: "Error", 
-        description: "Failed to delete some blog posts",
+        description: "Failed to delete blog posts",
         variant: "destructive",
       });
     }
@@ -159,9 +174,9 @@ export default function Blog() {
       header: "Languages",
       render: (post) => (
         <div className="flex space-x-1">
-          {post.description.en && <span className="text-xs">🇺🇸</span>}
-          {post.description.ka && <span className="text-xs">🇬🇪</span>}
-          {post.description.ru && <span className="text-xs">🇷🇺</span>}
+          {post.description?.en && <span className="text-xs">🇺🇸</span>}
+          {post.description?.ka && <span className="text-xs">🇬🇪</span>}
+          {post.description?.ru && <span className="text-xs">🇷🇺</span>}
         </div>
       ),
     },

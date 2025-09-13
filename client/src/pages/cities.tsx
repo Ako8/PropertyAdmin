@@ -80,18 +80,33 @@ export default function Cities() {
     if (selectedCities.length === 0) return;
     
     try {
-      for (const city of selectedCities) {
-        await deleteMutation.mutateAsync(city.id);
-      }
+      // Use Promise.allSettled for concurrent execution
+      const deletePromises = selectedCities.map(city => 
+        deleteMutation.mutateAsync(city.id)
+      );
+      const results = await Promise.allSettled(deletePromises);
+      
+      const successful = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
+      
       setSelectedCities([]);
-      toast({
-        title: "Success",
-        description: `${selectedCities.length} cities deleted successfully`,
-      });
+      
+      if (failed === 0) {
+        toast({
+          title: "Success",
+          description: `${successful} cities deleted successfully`,
+        });
+      } else {
+        toast({
+          title: "Partial Success",
+          description: `${successful} cities deleted, ${failed} failed`,
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       toast({
         title: "Error", 
-        description: "Failed to delete some cities",
+        description: "Failed to delete cities",
         variant: "destructive",
       });
     }
@@ -125,9 +140,9 @@ export default function Cities() {
       header: "Languages",
       render: (city) => (
         <div className="flex space-x-1">
-          {city.language.en && <span className="text-xs">🇺🇸</span>}
-          {city.language.ka && <span className="text-xs">🇬🇪</span>}
-          {city.language.ru && <span className="text-xs">🇷🇺</span>}
+          {city.language?.en && <span className="text-xs">🇺🇸</span>}
+          {city.language?.ka && <span className="text-xs">🇬🇪</span>}
+          {city.language?.ru && <span className="text-xs">🇷🇺</span>}
         </div>
       ),
     },
