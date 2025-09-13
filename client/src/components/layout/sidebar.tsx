@@ -1,4 +1,4 @@
-import { Link, useLocation } from "wouter";
+import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import {
   Home,
@@ -29,7 +29,7 @@ const secondaryNavigation = [
 ];
 
 export default function Sidebar() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
 
   return (
     <aside className="w-64 bg-card border-r border-border flex-shrink-0 sidebar-transition">
@@ -47,20 +47,28 @@ export default function Sidebar() {
             const isActive = location === item.href;
             
             return (
-              <Link key={item.name} href={item.href}>
-                <a
-                  className={cn(
-                    "flex items-center space-x-3 px-3 py-2 rounded-md transition-colors",
-                    isActive
-                      ? "bg-primary text-primary-foreground"
-                      : "hover:bg-muted text-foreground"
-                  )}
-                  data-testid={`nav-${item.name.toLowerCase().replace(' ', '-')}`}
-                >
-                  <Icon className="w-5 h-5" />
-                  <span>{item.name}</span>
-                </a>
-              </Link>
+              <div
+                key={item.name}
+                className={cn(
+                  "flex items-center space-x-3 px-3 py-2 rounded-md transition-colors cursor-pointer",
+                  isActive
+                    ? "bg-primary text-primary-foreground"
+                    : "hover:bg-muted text-foreground"
+                )}
+                onClick={() => setLocation(item.href)}
+                role="link"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setLocation(item.href);
+                  }
+                }}
+                tabIndex={0}
+                data-testid={`nav-${item.name.toLowerCase().replace(' ', '-')}`}
+              >
+                <Icon className="w-5 h-5" />
+                <span>{item.name}</span>
+              </div>
             );
           })}
 
@@ -70,20 +78,28 @@ export default function Sidebar() {
               const isActive = location === item.href;
               
               return (
-                <Link key={item.name} href={item.href}>
-                  <a
-                    className={cn(
-                      "flex items-center space-x-3 px-3 py-2 rounded-md transition-colors",
-                      isActive
-                        ? "bg-primary text-primary-foreground"
-                        : "hover:bg-muted text-foreground"
-                    )}
-                    data-testid={`nav-${item.name.toLowerCase().replace(' ', '-')}`}
-                  >
-                    <Icon className="w-5 h-5" />
-                    <span>{item.name}</span>
-                  </a>
-                </Link>
+                <div
+                  key={item.name}
+                  className={cn(
+                    "flex items-center space-x-3 px-3 py-2 rounded-md transition-colors cursor-pointer",
+                    isActive
+                      ? "bg-primary text-primary-foreground"
+                      : "hover:bg-muted text-foreground"
+                  )}
+                  onClick={() => setLocation(item.href)}
+                  role="link"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setLocation(item.href);
+                    }
+                  }}
+                  tabIndex={0}
+                  data-testid={`nav-${item.name.toLowerCase().replace(' ', '-')}`}
+                >
+                  <Icon className="w-5 h-5" />
+                  <span>{item.name}</span>
+                </div>
               );
             })}
           </div>

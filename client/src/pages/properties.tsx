@@ -40,9 +40,9 @@ export default function Properties() {
   const filteredProperties = properties.filter((property) => {
     const matchesSearch = property.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          property.city.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCity = !selectedCity || property.city === selectedCity;
-    const matchesType = !selectedType || property.type === selectedType;
-    const matchesRating = !selectedRating || 
+    const matchesCity = !selectedCity || selectedCity === "all" || property.city === selectedCity;
+    const matchesType = !selectedType || selectedType === "all" || property.type === selectedType;
+    const matchesRating = !selectedRating || selectedRating === "all" ||
                          (selectedRating === "5" && parseFloat(property.rating) === 5) ||
                          (selectedRating === "4+" && parseFloat(property.rating) >= 4) ||
                          (selectedRating === "3+" && parseFloat(property.rating) >= 3);
@@ -224,7 +224,7 @@ export default function Properties() {
               <SelectValue placeholder="All Cities" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Cities</SelectItem>
+              <SelectItem value="all">All Cities</SelectItem>
               {cities.map((city) => (
                 <SelectItem key={city.id} value={city.name}>
                   {city.name}
@@ -238,7 +238,7 @@ export default function Properties() {
               <SelectValue placeholder="All Types" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Types</SelectItem>
+              <SelectItem value="all">All Types</SelectItem>
               {types.map((type) => (
                 <SelectItem key={type.id} value={type.name}>
                   {type.name}
@@ -252,7 +252,7 @@ export default function Properties() {
               <SelectValue placeholder="All Ratings" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Ratings</SelectItem>
+              <SelectItem value="all">All Ratings</SelectItem>
               <SelectItem value="5">5 Stars</SelectItem>
               <SelectItem value="4+">4+ Stars</SelectItem>
               <SelectItem value="3+">3+ Stars</SelectItem>

@@ -37,7 +37,7 @@ export default function Blog() {
   const filteredPosts = blogPosts.filter((post) => {
     const matchesSearch = post.title.toLowerCase().includes(searchQuery.toLowerCase());
     // For now, treating all posts as published since the API doesn't provide status
-    const matchesStatus = !statusFilter || statusFilter === "published";
+    const matchesStatus = !statusFilter || statusFilter === "all" || statusFilter === "published";
     return matchesSearch && matchesStatus;
   });
 
@@ -228,7 +228,7 @@ export default function Blog() {
               <SelectValue placeholder="All Status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Status</SelectItem>
+              <SelectItem value="all">All Status</SelectItem>
               <SelectItem value="published">Published</SelectItem>
               <SelectItem value="draft">Draft</SelectItem>
               <SelectItem value="scheduled">Scheduled</SelectItem>

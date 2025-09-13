@@ -36,7 +36,7 @@ export default function Cities() {
   // Filter cities based on search and filters
   const filteredCities = cities.filter((city) => {
     const matchesSearch = city.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesRegion = !selectedRegion || city.regionId.toString() === selectedRegion;
+    const matchesRegion = !selectedRegion || selectedRegion === "all" || city.regionId.toString() === selectedRegion;
     return matchesSearch && matchesRegion;
   });
 
@@ -176,7 +176,7 @@ export default function Cities() {
               <SelectValue placeholder="All Regions" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Regions</SelectItem>
+              <SelectItem value="all">All Regions</SelectItem>
               {regions.map((region) => (
                 <SelectItem key={region.id} value={region.id.toString()}>
                   {region.name}

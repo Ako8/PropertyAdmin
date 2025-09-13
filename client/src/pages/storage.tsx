@@ -24,7 +24,7 @@ export default function Storage() {
 
   // Filter storage items by type
   const filteredItems = storageItems.filter((item) => {
-    return !selectedType || item.tableName === selectedType;
+    return !selectedType || selectedType === "all" || item.tableName === selectedType;
   });
 
   const handleUploadComplete = (url: string, fileName: string) => {
@@ -224,7 +224,7 @@ export default function Storage() {
                   <SelectValue placeholder="All Types" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Types</SelectItem>
+                  <SelectItem value="all">All Types</SelectItem>
                   <SelectItem value="Property">Property</SelectItem>
                   <SelectItem value="City">City</SelectItem>
                   <SelectItem value="Region">Region</SelectItem>

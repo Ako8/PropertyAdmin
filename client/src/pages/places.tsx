@@ -33,9 +33,9 @@ export default function Places() {
 
   const { data: places = [], isLoading } = usePlaces({
     search: searchQuery,
-    cityId: selectedCity ? parseInt(selectedCity) : undefined,
-    regionId: selectedRegion ? parseInt(selectedRegion) : undefined,
-    category: category || undefined,
+    cityId: selectedCity && selectedCity !== "all" ? parseInt(selectedCity) : undefined,
+    regionId: selectedRegion && selectedRegion !== "all" ? parseInt(selectedRegion) : undefined,
+    category: category && category !== "all" ? category : undefined,
   });
   const { data: cities = [] } = useCities();
   const { data: regions = [] } = useRegions();
@@ -200,7 +200,7 @@ export default function Places() {
               <SelectValue placeholder="All Cities" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Cities</SelectItem>
+              <SelectItem value="all">All Cities</SelectItem>
               {cities.map((city) => (
                 <SelectItem key={city.id} value={city.id.toString()}>
                   {city.name}
@@ -214,7 +214,7 @@ export default function Places() {
               <SelectValue placeholder="All Regions" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Regions</SelectItem>
+              <SelectItem value="all">All Regions</SelectItem>
               {regions.map((region) => (
                 <SelectItem key={region.id} value={region.id.toString()}>
                   {region.name}
@@ -228,7 +228,7 @@ export default function Places() {
               <SelectValue placeholder="All Categories" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Categories</SelectItem>
+              <SelectItem value="all">All Categories</SelectItem>
               <SelectItem value="attraction">Attraction</SelectItem>
               <SelectItem value="restaurant">Restaurant</SelectItem>
               <SelectItem value="hotel">Hotel</SelectItem>
