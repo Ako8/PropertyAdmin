@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DataTable, Column } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,17 +10,19 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Plus, Eye, Edit, Trash2 } from "lucide-react";
-import { useTypes, useDeleteType } from "@/hooks/use-api";
+import { useTypes, useType, useDeleteType } from "@/hooks/use-api";
 import TypeForm from "@/components/forms/type-form";
 import type { TypeDto } from "@/types/api";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Types() {
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingTypeId, setEditingTypeId] = useState<number | null>(null);
   const [editingType, setEditingType] = useState<TypeDto | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
   const { data: types = [], isLoading } = useTypes();
+  const { data: fullTypeData, isLoading: isLoadingType } = useType(editingTypeId || 0);
   const deleteMutation = useDeleteType();
   const { toast } = useToast();
 
@@ -44,13 +46,21 @@ export default function Types() {
   };
 
   const handleEdit = (type: TypeDto) => {
-    setEditingType(type);
-    setIsFormOpen(true);
+    setEditingTypeId(type.id);
   };
+
+  // When full type data is loaded, set it and open modal
+  useEffect(() => {
+    if (fullTypeData && editingTypeId) {
+      setEditingType(fullTypeData);
+      setIsFormOpen(true);
+    }
+  }, [fullTypeData, editingTypeId]);
 
   const handleFormClose = () => {
     setIsFormOpen(false);
     setEditingType(null);
+    setEditingTypeId(null);
   };
 
   const columns: Column<TypeDto>[] = [

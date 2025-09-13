@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DataTable, Column } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,7 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, Eye, Edit, Trash2, Search, Trash, CheckCircle } from "lucide-react";
-import { usePlaces, useDeletePlace, useCities, useRegions } from "@/hooks/use-api";
+import { usePlaces, usePlace, useDeletePlace, useCities, useRegions } from "@/hooks/use-api";
 import PlaceForm from "@/components/forms/place-form";
 import type { PlaceDto } from "@/types/api";
 import { useToast } from "@/hooks/use-toast";
@@ -36,6 +36,7 @@ import { Input } from "@/components/ui/input";
 
 export default function Places() {
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingPlaceId, setEditingPlaceId] = useState<number | null>(null);
   const [editingPlace, setEditingPlace] = useState<PlaceDto | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCity, setSelectedCity] = useState<string>("");
@@ -51,6 +52,7 @@ export default function Places() {
   });
   const { data: cities = [] } = useCities();
   const { data: regions = [] } = useRegions();
+  const { data: fullPlaceData, isLoading: isLoadingPlace } = usePlace(editingPlaceId || 0);
   const deleteMutation = useDeletePlace();
   const { toast } = useToast();
 
@@ -69,13 +71,21 @@ export default function Places() {
   };
 
   const handleEdit = (place: PlaceDto) => {
-    setEditingPlace(place);
-    setIsFormOpen(true);
+    setEditingPlaceId(place.id);
   };
+
+  // When full place data is loaded, set it and open modal
+  useEffect(() => {
+    if (fullPlaceData && editingPlaceId) {
+      setEditingPlace(fullPlaceData);
+      setIsFormOpen(true);
+    }
+  }, [fullPlaceData, editingPlaceId]);
 
   const handleFormClose = () => {
     setIsFormOpen(false);
     setEditingPlace(null);
+    setEditingPlaceId(null);
   };
 
   const handleBulkDelete = async () => {

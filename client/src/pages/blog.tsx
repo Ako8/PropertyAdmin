@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DataTable, Column } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,7 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, Eye, Edit, Trash2, CheckCircle, Clock, Edit3, Trash } from "lucide-react";
-import { useBlogPosts, useDeleteBlogPost } from "@/hooks/use-api";
+import { useBlogPosts, useBlogPost, useDeleteBlogPost } from "@/hooks/use-api";
 import BlogForm from "@/components/forms/blog-form";
 import type { BlogDto } from "@/types/api";
 import { useToast } from "@/hooks/use-toast";
@@ -36,12 +36,14 @@ import { StatsCard } from "@/components/ui/stats-card";
 
 export default function Blog() {
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingPostId, setEditingPostId] = useState<number | null>(null);
   const [editingPost, setEditingPost] = useState<BlogDto | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [selectedPosts, setSelectedPosts] = useState<BlogDto[]>([]);
 
   const { data: blogPosts = [], isLoading } = useBlogPosts();
+  const { data: fullPostData, isLoading: isLoadingPost } = useBlogPost(editingPostId || 0);
   const deleteMutation = useDeleteBlogPost();
   const { toast } = useToast();
 
@@ -68,13 +70,21 @@ export default function Blog() {
   };
 
   const handleEdit = (post: BlogDto) => {
-    setEditingPost(post);
-    setIsFormOpen(true);
+    setEditingPostId(post.id);
   };
+
+  // When full post data is loaded, set it and open modal
+  useEffect(() => {
+    if (fullPostData && editingPostId) {
+      setEditingPost(fullPostData);
+      setIsFormOpen(true);
+    }
+  }, [fullPostData, editingPostId]);
 
   const handleFormClose = () => {
     setIsFormOpen(false);
     setEditingPost(null);
+    setEditingPostId(null);
   };
 
   const handleBulkDelete = async () => {

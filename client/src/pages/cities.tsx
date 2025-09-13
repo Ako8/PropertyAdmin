@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DataTable, Column } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,13 +28,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, Eye, Edit, Trash2, Trash, CheckCircle } from "lucide-react";
-import { useCities, useDeleteCity, useRegions } from "@/hooks/use-api";
+import { useCities, useCity, useDeleteCity, useRegions } from "@/hooks/use-api";
 import CityForm from "@/components/forms/city-form";
 import type { CityDto } from "@/types/api";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Cities() {
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingCityId, setEditingCityId] = useState<number | null>(null);
   const [editingCity, setEditingCity] = useState<CityDto | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRegion, setSelectedRegion] = useState<string>("");
@@ -42,6 +43,7 @@ export default function Cities() {
 
   const { data: cities = [], isLoading } = useCities();
   const { data: regions = [] } = useRegions();
+  const { data: fullCityData, isLoading: isLoadingCity } = useCity(editingCityId || 0);
   const deleteMutation = useDeleteCity();
   const { toast } = useToast();
 
@@ -67,13 +69,21 @@ export default function Cities() {
   };
 
   const handleEdit = (city: CityDto) => {
-    setEditingCity(city);
-    setIsFormOpen(true);
+    setEditingCityId(city.id);
   };
+
+  // When full city data is loaded, set it and open modal
+  useEffect(() => {
+    if (fullCityData && editingCityId) {
+      setEditingCity(fullCityData);
+      setIsFormOpen(true);
+    }
+  }, [fullCityData, editingCityId]);
 
   const handleFormClose = () => {
     setIsFormOpen(false);
     setEditingCity(null);
+    setEditingCityId(null);
   };
 
   const handleBulkDelete = async () => {

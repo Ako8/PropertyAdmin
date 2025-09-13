@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DataTable, Column } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,14 +28,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, Eye, Edit, Trash2, Star, Filter, Trash, CheckCircle } from "lucide-react";
-import { useProperties, useDeleteProperty, useCities, useTypes } from "@/hooks/use-api";
+import { useProperties, useProperty, useDeleteProperty, useCities, useTypes } from "@/hooks/use-api";
 import PropertyForm from "@/components/forms/property-form";
-import type { PropertyCardDto } from "@/types/api";
+import type { PropertyCardDto, PropertyDto } from "@/types/api";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Properties() {
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingProperty, setEditingProperty] = useState<PropertyCardDto | null>(null);
+  const [editingPropertyId, setEditingPropertyId] = useState<number | null>(null);
+  const [editingProperty, setEditingProperty] = useState<PropertyDto | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCity, setSelectedCity] = useState<string>("");
   const [selectedType, setSelectedType] = useState<string>("");
@@ -45,6 +46,7 @@ export default function Properties() {
   const { data: properties = [], isLoading } = useProperties();
   const { data: cities = [] } = useCities();
   const { data: types = [] } = useTypes();
+  const { data: fullPropertyData, isLoading: isLoadingProperty } = useProperty(editingPropertyId || 0);
   const deleteMutation = useDeleteProperty();
   const { toast } = useToast();
 
@@ -77,13 +79,21 @@ export default function Properties() {
   };
 
   const handleEdit = (property: PropertyCardDto) => {
-    setEditingProperty(property);
-    setIsFormOpen(true);
+    setEditingPropertyId(property.id);
   };
+
+  // When full property data is loaded, set it and open modal
+  useEffect(() => {
+    if (fullPropertyData && editingPropertyId) {
+      setEditingProperty(fullPropertyData);
+      setIsFormOpen(true);
+    }
+  }, [fullPropertyData, editingPropertyId]);
 
   const handleFormClose = () => {
     setIsFormOpen(false);
     setEditingProperty(null);
+    setEditingPropertyId(null);
   };
 
   const handleBulkDelete = async () => {

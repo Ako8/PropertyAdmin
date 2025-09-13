@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DataTable, Column } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +21,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Plus, Eye, Edit, Trash2, ChevronDown, Map, MapPin, Trash } from "lucide-react";
-import { useRegions, useDeleteRegion, useCities } from "@/hooks/use-api";
+import { useRegions, useRegion, useDeleteRegion, useCities } from "@/hooks/use-api";
 import RegionForm from "@/components/forms/region-form";
 import type { RegionDto } from "@/types/api";
 import { useToast } from "@/hooks/use-toast";
@@ -30,6 +30,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 
 export default function Regions() {
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingRegionId, setEditingRegionId] = useState<number | null>(null);
   const [editingRegion, setEditingRegion] = useState<RegionDto | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedRegions, setExpandedRegions] = useState<Set<number>>(new Set());
@@ -37,6 +38,7 @@ export default function Regions() {
 
   const { data: regions = [], isLoading } = useRegions();
   const { data: cities = [] } = useCities();
+  const { data: fullRegionData, isLoading: isLoadingRegion } = useRegion(editingRegionId || 0);
   const deleteMutation = useDeleteRegion();
   const { toast } = useToast();
 
@@ -60,13 +62,21 @@ export default function Regions() {
   };
 
   const handleEdit = (region: RegionDto) => {
-    setEditingRegion(region);
-    setIsFormOpen(true);
+    setEditingRegionId(region.id);
   };
+
+  // When full region data is loaded, set it and open modal
+  useEffect(() => {
+    if (fullRegionData && editingRegionId) {
+      setEditingRegion(fullRegionData);
+      setIsFormOpen(true);
+    }
+  }, [fullRegionData, editingRegionId]);
 
   const handleFormClose = () => {
     setIsFormOpen(false);
     setEditingRegion(null);
+    setEditingRegionId(null);
   };
 
   const handleBulkDelete = async () => {

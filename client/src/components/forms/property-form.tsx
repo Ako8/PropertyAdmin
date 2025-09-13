@@ -24,11 +24,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Trash2, Save } from "lucide-react";
 import { useCreateProperty, useUpdateProperty, useCities, useTypes } from "@/hooks/use-api";
 import { propertyCreateSchema, type PropertyCreateInput } from "@shared/schema";
-import type { PropertyCardDto, LanguageDto } from "@/types/api";
+import type { PropertyDto, LanguageDto } from "@/types/api";
 import { useState, useEffect } from "react";
 
 interface PropertyFormProps {
-  property?: PropertyCardDto | null;
+  property?: PropertyDto | null;
   onSuccess?: () => void;
 }
 
@@ -50,7 +50,7 @@ export default function PropertyForm({ property, onSuccess }: PropertyFormProps)
   const updateMutation = useUpdateProperty();
   const isEditing = !!property;
   
-  const [rooms, setRooms] = useState<Room[]>([
+  const [rooms, setRooms] = useState<Room[]>(property?.rooms || [
     {
       name: "",
       sqft: 0,
@@ -66,24 +66,24 @@ export default function PropertyForm({ property, onSuccess }: PropertyFormProps)
   const form = useForm<PropertyCreateInput>({
     resolver: zodResolver(propertyCreateSchema),
     defaultValues: {
-      name: "",
-      slug: "",
-      cityId: 0,
-      typeId: 0,
-      kuulaEmbedCode: "",
-      mapUrl: "",
-      hostName: "",
-      hostNumber: "",
-      hostFacebookUrl: "",
-      hostInstagramUrl: "",
-      hostYoutubeUrl: "",
-      rating: "",
-      language: {
+      name: property?.name || "",
+      slug: property?.slug || "",
+      cityId: property?.cityId || 0,
+      typeId: property?.typeId || 0,
+      kuulaEmbedCode: property?.kuulaEmbedCode || "",
+      mapUrl: property?.mapUrl || "",
+      hostName: property?.hostName || "",
+      hostNumber: property?.hostNumber || "",
+      hostFacebookUrl: property?.hostFacebookUrl || "",
+      hostInstagramUrl: property?.hostInstagramUrl || "",
+      hostYoutubeUrl: property?.hostYoutubeUrl || "",
+      rating: property?.rating || "",
+      language: property?.language || {
         ka: "",
         en: "",
         ru: "",
       },
-      rooms: rooms,
+      rooms: property?.rooms || rooms,
     },
   });
 
