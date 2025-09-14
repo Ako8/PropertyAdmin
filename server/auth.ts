@@ -82,7 +82,7 @@ export function setupAuth(app: Express) {
     done(null, user);
   });
 
-  app.post("/api/login", (req, res, next) => {
+  app.get("/api/login", (req, res, next) => {
     passport.authenticate("local", (err, user, info) => {
       if (err) {
         // Service unavailable (external API error)
@@ -100,7 +100,7 @@ export function setupAuth(app: Express) {
     })(req, res, next);
   });
 
-  app.post("/api/logout", (req, res, next) => {
+  app.get("/api/logout", (req, res, next) => {
     req.logout((err) => {
       if (err) return next(err);
       res.sendStatus(200);
