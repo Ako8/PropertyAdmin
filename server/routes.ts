@@ -2,6 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import multer from "multer";
 import { storage } from "./storage";
+import { setupAuth } from "./auth"; // Basic Username/Password Authentication integration
 import { propertyCreateSchema, cityCreateSchema, regionCreateSchema, placeCreateSchema, blogCreateSchema, typeCreateSchema } from "@shared/schema";
 import type { 
   PropertyCreateInput, 
@@ -50,6 +51,9 @@ async function apiRequest(endpoint: string, options: RequestInit = {}) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Setup authentication - Basic Username/Password Authentication integration
+  setupAuth(app);
+
   // CORS middleware for external API
   app.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");

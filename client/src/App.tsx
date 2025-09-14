@@ -14,8 +14,11 @@ import Blog from "@/pages/blog";
 import Storage from "@/pages/storage";
 import Languages from "@/pages/languages";
 import Types from "@/pages/types";
+import AuthPage from "@/pages/auth-page";
+import { AuthProvider } from "@/hooks/use-auth";
+import { ProtectedRoute } from "@/lib/protected-route";
 
-function Router() {
+function ProtectedApp() {
   return (
     <Layout>
       <Switch>
@@ -34,12 +37,23 @@ function Router() {
   );
 }
 
+function Router() {
+  return (
+    <Switch>
+      <Route path="/auth" component={AuthPage} />
+      <ProtectedRoute path="/" component={ProtectedApp} />
+    </Switch>
+  );
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
-        <Router />
+        <AuthProvider>
+          <Toaster />
+          <Router />
+        </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

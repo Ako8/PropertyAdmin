@@ -1,5 +1,10 @@
 import { type User, type InsertUser } from "@shared/schema";
 import { randomUUID } from "crypto";
+import session from "express-session";
+import createMemoryStore from "memorystore";
+
+// Basic Username/Password Authentication integration - session store support
+const MemoryStore = createMemoryStore(session);
 
 // Keep the existing interface but extend for admin functionality
 export interface IStorage {
@@ -11,15 +16,24 @@ export interface IStorage {
   getAdminSession(sessionId: string): Promise<{ userId: string; isAdmin: boolean } | undefined>;
   createAdminSession(userId: string): Promise<string>;
   deleteAdminSession(sessionId: string): Promise<void>;
+  
+  // Session store for authentication
+  sessionStore: any; // Using any to avoid type issues with session store
 }
 
 export class MemStorage implements IStorage {
   private users: Map<string, User>;
   private adminSessions: Map<string, { userId: string; isAdmin: boolean; createdAt: Date }>;
+  public sessionStore: any;
 
   constructor() {
     this.users = new Map();
     this.adminSessions = new Map();
+    
+    // Initialize session store for authentication
+    this.sessionStore = new MemoryStore({
+      checkPeriod: 86400000, // prune expired entries every 24h
+    });
     
     // Create default admin user
     this.createDefaultAdmin();
