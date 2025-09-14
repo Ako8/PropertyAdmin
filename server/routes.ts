@@ -216,11 +216,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/regions/:id", async (req, res) => {
     try {
+      // First try the individual region endpoint
       const response = await apiRequest(`/api/Region/${req.params.id}`);
       const data = await response.json();
       res.json(data);
     } catch (error) {
-      res.status(500).json({ error: error instanceof Error ? error.message : "Failed to fetch region" });
+      // Fallback: fetch all regions and filter by ID
+      try {
+        console.log(`Individual region fetch failed for ID ${req.params.id}, falling back to list fetch`);
+        const fallbackResponse = await apiRequest("/api/Region");
+        const allRegions = await fallbackResponse.json();
+        const regionId = parseInt(req.params.id);
+        const region = allRegions.find((r: any) => r.id === regionId);
+        
+        if (region) {
+          res.json(region);
+        } else {
+          res.status(404).json({ error: `Region with ID ${req.params.id} not found` });
+        }
+      } catch (fallbackError) {
+        res.status(500).json({ error: fallbackError instanceof Error ? fallbackError.message : "Failed to fetch region" });
+      }
     }
   });
 
