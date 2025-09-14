@@ -41,7 +41,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/auth" component={AuthPage} />
-      <ProtectedRoute path="/" component={ProtectedApp} />
+      <ProtectedRoute path="*" component={ProtectedApp} />
     </Switch>
   );
 }
