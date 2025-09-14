@@ -35,17 +35,7 @@ export class MemStorage implements IStorage {
       checkPeriod: 86400000, // prune expired entries every 24h
     });
     
-    // Create default admin user
-    this.createDefaultAdmin();
-  }
-
-  private async createDefaultAdmin() {
-    const adminUser: User = {
-      id: randomUUID(),
-      username: "admin",
-      password: "admin123", // In production, this should be hashed
-    };
-    this.users.set(adminUser.id, adminUser);
+    // No default admin creation - using external authentication
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -60,7 +50,7 @@ export class MemStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = randomUUID();
-    const user: User = { ...insertUser, id };
+    const user: User = { ...insertUser, id, password: null };
     this.users.set(id, user);
     return user;
   }

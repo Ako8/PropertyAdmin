@@ -3,16 +3,15 @@ import { pgTable, text, varchar, integer, decimal, boolean, timestamp } from "dr
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Users table (keeping existing structure)
+// Users table (for external authentication integration)
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+  password: text("password"), // Optional since we use external authentication
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
-  password: true,
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
